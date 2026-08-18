@@ -1,0 +1,21 @@
+# node_modules/
+# dist/
+# .env
+# *.log
+
+# Dependencies (root and nested)
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment files (root and nested)
+.env
+*.env
+!.env.example
+
+# Build & Log outputs
+dist/
+*.log
+
+# Zip & Archive files
+*.zip
