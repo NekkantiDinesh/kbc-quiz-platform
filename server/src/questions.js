@@ -1,13 +1,3 @@
-// Question bank
-// -----------------------------------------------------------------------
-// Edit this array to write your own quiz. Each question needs:
-//   id            - unique string (keep it stable, don't reuse across quizzes)
-//   text          - the question shown on screen
-//   options       - exactly 4 strings, in order (index 0-3)
-//   correctIndex  - index (0-3) of the correct option
-//   timeLimitSec  - optional, overrides DEFAULT_TIME_LIMIT_SEC from .env
-// -----------------------------------------------------------------------
-
 export const questions = [
   {
     id: 'q1',
@@ -50,7 +40,6 @@ export const questions = [
     timeLimitSec: 15,
   },
 ];
-
 export function validateQuestions(list) {
   list.forEach((q, i) => {
     if (!q.id || !q.text || !Array.isArray(q.options) || q.options.length !== 4) {
