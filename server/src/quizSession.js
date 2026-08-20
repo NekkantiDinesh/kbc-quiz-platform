@@ -7,7 +7,7 @@ const PHASES = {
 
 const BASE_POINTS = 1000;
 const MIN_POINTS = 300;
-const SPEED_BONUS_SHARE = 0.5; // up to 50% of BASE_POINTS lost to slow answers
+const SPEED_BONUS_SHARE = 0.5;
 
 export class QuizSession {
   constructor(questions, defaultTimeLimitSec) {
@@ -19,17 +19,10 @@ export class QuizSession {
     this.questionStartedAt = null;
     this.questionTimeLimitMs = null;
     this.lockTimer = null;
-
-    // employeeId -> employee record
     this.employees = new Map();
-    // socketId -> employeeId (to resolve on disconnect)
     this.socketToEmployee = new Map();
-
     this.hostSocketId = null;
   }
-
-  // ---------- Employees ----------
-
   upsertEmployee(employeeId, name, socketId) {
     let emp = this.employees.get(employeeId);
     if (!emp) {
@@ -39,7 +32,7 @@ export class QuizSession {
         socketId,
         connected: true,
         score: 0,
-        history: new Map(), // questionId -> { optionIndex, timeMs, correct, points }
+        history: new Map(),
       };
       this.employees.set(employeeId, emp);
     } else {
@@ -50,7 +43,6 @@ export class QuizSession {
     this.socketToEmployee.set(socketId, employeeId);
     return emp;
   }
-
   handleDisconnect(socketId) {
     const employeeId = this.socketToEmployee.get(socketId);
     if (!employeeId) return null;
@@ -61,13 +53,11 @@ export class QuizSession {
     }
     return employeeId;
   }
-
   connectedCount() {
     let n = 0;
     for (const e of this.employees.values()) if (e.connected) n++;
     return n;
   }
-
   employeeList() {
     return Array.from(this.employees.values())
       .map((e) => ({
@@ -78,13 +68,9 @@ export class QuizSession {
       }))
       .sort((a, b) => b.score - a.score);
   }
-
-  // ---------- Quiz flow ----------
-
   get currentQuestion() {
     return this.currentIndex >= 0 ? this.questions[this.currentIndex] : null;
   }
-
   startQuiz() {
     if (this.questions.length === 0) throw new Error('No questions loaded.');
     this.currentIndex = -1;
@@ -94,7 +80,6 @@ export class QuizSession {
     }
     return this.nextQuestion();
   }
-
   nextQuestion() {
     if (this.lockTimer) clearTimeout(this.lockTimer);
     this.currentIndex += 1;
@@ -109,7 +94,6 @@ export class QuizSession {
     this.questionTimeLimitMs = (q.timeLimitSec || this.defaultTimeLimitSec) * 1000;
     return this.publicQuestion();
   }
-
   publicQuestion() {
     const q = this.currentQuestion;
     if (!q) return null;
@@ -123,12 +107,10 @@ export class QuizSession {
       startedAt: this.questionStartedAt,
     };
   }
-
   isSubmissionWindowOpen() {
     if (this.phase !== PHASES.QUESTION) return false;
     return Date.now() - this.questionStartedAt <= this.questionTimeLimitMs;
   }
-
   submitAnswer(employeeId, questionId, optionIndex) {
     const q = this.currentQuestion;
     if (!q || q.id !== questionId) return { ok: false, reason: 'Question has moved on.' };
@@ -139,7 +121,6 @@ export class QuizSession {
     if (typeof optionIndex !== 'number' || optionIndex < 0 || optionIndex > 3) {
       return { ok: false, reason: 'Invalid option.' };
     }
-
     const timeMs = Date.now() - this.questionStartedAt;
     const correct = optionIndex === q.correctIndex;
     let points = 0;
@@ -152,10 +133,8 @@ export class QuizSession {
     }
     emp.history.set(questionId, { optionIndex, timeMs, correct, points });
     emp.score += points;
-
     return { ok: true, correct, points };
   }
-
   submissionCount() {
     const q = this.currentQuestion;
     if (!q) return 0;
@@ -163,7 +142,6 @@ export class QuizSession {
     for (const e of this.employees.values()) if (e.history.has(q.id)) n++;
     return n;
   }
-
   revealCurrent() {
     const q = this.currentQuestion;
     if (!q) return null;
@@ -188,25 +166,21 @@ export class QuizSession {
       totalPlayers: this.employees.size,
     };
   }
-
   leaderboard(limit = 10) {
     return Array.from(this.employees.values())
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
       .map((e, i) => ({ rank: i + 1, employeeId: e.employeeId, name: e.name, score: e.score }));
   }
-
   rankOf(employeeId) {
     const sorted = Array.from(this.employees.values()).sort((a, b) => b.score - a.score);
     const idx = sorted.findIndex((e) => e.employeeId === employeeId);
     return idx === -1 ? null : idx + 1;
   }
-
   endQuiz() {
     if (this.lockTimer) clearTimeout(this.lockTimer);
     this.phase = PHASES.FINISHED;
   }
-
   resetToLobby() {
     if (this.lockTimer) clearTimeout(this.lockTimer);
     this.phase = PHASES.LOBBY;
@@ -216,9 +190,6 @@ export class QuizSession {
       e.history.clear();
     }
   }
-
-  // ---------- Sync state for (re)connecting clients ----------
-
   publicSnapshotForEmployee(employeeId) {
     const emp = this.employees.get(employeeId);
     const base = {
@@ -236,7 +207,6 @@ export class QuizSession {
     }
     return base;
   }
-
   revealSnapshot() {
     const q = this.currentQuestion;
     if (!q) return null;
@@ -262,7 +232,6 @@ export class QuizSession {
       totalPlayers: this.employees.size,
     };
   }
-
   hostSnapshot() {
     return {
       phase: this.phase,
